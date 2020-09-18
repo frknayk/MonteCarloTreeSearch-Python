@@ -21,12 +21,7 @@ The RL designer aims to keep your RL project organized with a simple UI
 1. Clone the project via command below
    - ``` git clone https://github.com/frknayk/Reinforcement-Learning-Designer.git ```
 
-2. Install the project
-   - ``` pip3 install -e . ```
-3. Install necessary packages of UI
-   - ```cd Designer/agent_designer```
-   - Follow the instructions README file there
-4. Install necessary packages of the project
+2. Install necessary packages of the project
    - ```pip3 install requirements.txt``` 
    
 ## LIMITATIONS
