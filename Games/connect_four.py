@@ -178,6 +178,7 @@ class ConnectFour:
 
         else:
             return False, PLAYER.NONE
+
     def check_win_horizontal(self, board):
         is_game_won = False
         player = PLAYER.NONE
@@ -289,7 +290,7 @@ class ConnectFour:
                         # Check if the move is the winning move
                         is_draw = self.check_draw(board)
                         if is_draw:
-                            self.print_to_board('DRAW!')
+                            self.print_to_board('DRAW!',color=Colors.YELLOW.value)
                             self.draw_board(board)
                             pygame.time.wait(3000)
                             sys.exit()
