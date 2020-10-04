@@ -10,9 +10,11 @@ state = env.reset()
 
 is_done = False
 while not is_done:
-    action = input('select column to place the rock : ')
-    next_state, reward, is_done = env.step(int(action))
-    env.render()
+    action = env.get_random_action()
+    next_state, reward, is_done = env.step(action)
+print("Winning player : ",next_state['player'].name)
+print(next_state['board'])
+
 # root = NodeConnect4(state = state)
 # mcts = MonteCarloTreeSearch(root)
 # best_node = mcts.best_action(simulations_number=10000)
