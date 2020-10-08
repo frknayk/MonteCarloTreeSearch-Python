@@ -63,7 +63,7 @@ class Node(ABC):
             (c.q / c.n) + c_param * np.sqrt((2 * np.log(self.n) / c.n))
             for c in self.children
         ]
-        return self.children[np.argmax(choices_weights)]
+        return self.children[np.argmax(choices_weights)], np.argmax(choices_weights)
 
     def rollout_policy(self, possible_moves):     
         return possible_moves[np.random.randint(len(possible_moves))]
