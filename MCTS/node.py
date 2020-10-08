@@ -6,14 +6,14 @@ from abc import ABC, abstractmethod
 
 class Node(ABC):
 
-    def __init__(self, state, parent=None):
+    def __init__(self, gym_env, parent=None):
         """
         Parameters
         ----------
-        state : np.ndarray
+        env : gym environment
         parent : Node
         """
-        self.state = state
+        self.env = gym_env
         self.parent = parent
         self.children = []
 
@@ -65,5 +65,5 @@ class Node(ABC):
         ]
         return self.children[np.argmax(choices_weights)]
 
-    def rollout_policy(self, possible_moves):        
+    def rollout_policy(self, possible_moves):     
         return possible_moves[np.random.randint(len(possible_moves))]
