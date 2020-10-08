@@ -1,4 +1,4 @@
-# AlphaGo Zero Minimal Example
+# Monte Carlo Tree Search Minimal Example on Connect-4 Gym Environment
 
 ## Installation
 
@@ -11,4 +11,4 @@ Install gym-connect environment
 3. Go to *gym_connect* submodule and install the game via : ```pip3 install -e . ```
 
 ## Acknowledgements
-MCTS is heavily inspired from int8's implementation : https://github.com/int8/monte-carlo-tree-search
+Some of MCTS part is heavily inspired from int8's implementation : https://github.com/int8/monte-carlo-tree-search
