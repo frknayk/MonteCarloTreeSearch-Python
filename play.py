@@ -1,37 +1,31 @@
 #!/usr/bin/env python3
-import numpy as np
 import gym
-import gym_connect 
 from gym_connect.envs.connect_env import PLAYER
-from connect_4_agent.node_connect_4 import NodeConnect4
+from gym_connect.envs.enums.results_enum import RESULTS
 from MCTS.mcts import MonteCarloTreeSearch
+from MCTS.node import Node
 
-env = gym.make('connect-v0')
+env_train = gym.make('connect-v0')
+root = Node(gym_env=env_train, game_status=RESULTS.NOT_FINISHED, move=None, parent=None)
+mcts_agent = MonteCarloTreeSearch(root)
+mcts_agent.train(70)
 
-# Training
-root = NodeConnect4(gym_env = env.copy())
-mcts = MonteCarloTreeSearch(root)
-best_child, best_child_action = mcts.best_action(simulations_number=500)
-
-
+env_test = gym.make('connect-v0')
 is_done = False
-# while not is_done:
-    
-#     selected_action = None
-    
-#     if env.PLAYER is PLAYER.FIRST:
-#         root = NodeConnect4(gym_env = env.copy())
-#         mcts.root = root
-#         best_child, best_child_action = mcts.best_action(simulations_number=100)
-#         selected_action = best_child_action
-#     else:
-#         selected_action = env.get_action_from_terminal()
-    
-#     next_state, reward, is_done = env.step(selected_action)
+while not is_done:
+    selected_action = None
+    if env_test.PLAYER is PLAYER.FIRST:
+        mcts_agent.root.env = env_test.copy()
+        mcts_agent.train_mcts_online(mcts_agent.root,250)
+        _, selected_action = mcts_agent.root.select_move()
+    else:
+        selected_action = env_test.get_action_from_terminal()
 
-#     if next_state is None:
-#         debug = True
-#     else:
-#         print(next_state['board'])
+    next_state, reward, is_done = env_test.step(selected_action)
 
-# print("Winning player : ",env.PLAYER)
+    if next_state is None:
+        debug = True
+    else:
+        print(next_state['board'])
+
+print("Winning player : ",env_test.PLAYER)
