@@ -67,3 +67,6 @@ class Node(ABC):
 
     def rollout_policy(self, possible_moves):     
         return possible_moves[np.random.randint(len(possible_moves))]
+
+    def copy(self):
+        pass

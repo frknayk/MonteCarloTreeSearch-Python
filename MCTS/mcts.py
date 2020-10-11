@@ -24,18 +24,18 @@ class MonteCarloTreeSearch(object):
         -------
 
         """
-        for _ in tqdm(range(0, simulations_number),desc='MCTS choosing best action'):
+        for _ in tqdm(range(0, simulations_number),desc='MCTS simulation'):
             # Select node  
-            v = self._tree_policy()
+            selected_node = self.tree_policy()
             # Run simulation from selected node
-            reward = v.rollout()
+            reward = selected_node.rollout()
             # Backpropagation
-            v.backpropagate(reward)
+            selected_node.backpropagate(reward)
         # to select best child go for exploitation only
         best_child, best_child_action =  self.root.best_child(c_param=0.)
         return best_child, best_child_action
 
-    def _tree_policy(self):
+    def tree_policy(self):
         """
         selects node to run rollout/playout for
 
@@ -43,7 +43,7 @@ class MonteCarloTreeSearch(object):
         -------
 
         """
-        current_node = self.root
+        current_node = self.root.copy()
         while not current_node.is_terminal_node():
             if not current_node.is_fully_expanded():
                 return current_node.expand()
