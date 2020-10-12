@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import random
-from gym.logger import debug
 import numpy as np
 from tqdm import tqdm
+import pickle
 
 from .node import Node
-
 from .mcts_tools import random_play_improved
 from gym_connect.envs.enums.player import PLAYER
 from gym_connect.envs.enums.results_enum import RESULTS
@@ -131,3 +130,25 @@ class MonteCarloTreeSearch(object):
             self.mcts_one_step(self.root)
             current = int(round(time.time() * 1000))
         return self.root
+
+    def save(self):
+        total_play = 0
+        for child in self.root.children:
+            total_play += child.games
+        print("Total number of games played from root node : {0}".format(total_play) )
+
+        agent_name = 'TrainedAgents/mcts_brain_' + str(total_play) +  '.pickle' 
+        with open(agent_name, 'wb') as handle:
+            pickle.dump(self.root, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            print("Agent is sucesfully saved !")
+
+    def load(self, agent_path):
+        agent_name = agent_path
+        root_loaded = None
+        with open(agent_name, 'rb') as handle:
+            root_loaded  = pickle.load(handle)
+        if root_loaded is not None:
+            self.root = root_loaded
+            print("Agent brain is loaded succesfully !")
+        else:
+            print("Agent brain could not be loaded")
