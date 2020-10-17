@@ -13,7 +13,6 @@ class Node:
         self.games = 0
         self.children = None
         self.env = gym_env
-        self.state = self.env.state
         self.game_status = game_status
 
     def set_children(self, children):
@@ -23,33 +22,6 @@ class Node:
         if self.games == 0:
             return None
         return (self.win/self.games) + np.sqrt(2*np.log(self.parent.games)/self.games)
-
-
-    def select_move(self):
-        """
-        Select best move and advance
-        :return:
-        """
-        if self.children is None:
-            return None, None
-
-        winners = [child for child in self.children if child.game_status is RESULTS.WON]
-        if len(winners) > 0:
-            return winners[0], winners[0].move
-
-        games = [child.win/child.games if child.games > 0 else 0 for child in self.children]
-        best_child = self.children[np.argmax(games)]
-        return best_child, best_child.move
-
-
-    def get_children_with_move(self, move):
-        if self.children is None:
-            return None
-        for child in self.children:
-            if child.move == move:
-                return child
-
-        raise Exception('Not existing child')
     
     def copy(self):
         """Return deep copied env"""

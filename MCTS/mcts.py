@@ -2,10 +2,7 @@
 import random
 import numpy as np
 from tqdm import tqdm
-import pickle
-
-from .node import Node
-from .mcts_tools import random_play_improved
+from MCTS.node import Node
 from gym_connect.envs.enums.player import PLAYER
 from gym_connect.envs.enums.results_enum import RESULTS
 
@@ -14,23 +11,11 @@ class MonteCarloTreeSearch(object):
     def __init__(self, node):
         # Root node of the tree
         self.root = node
-    
-    def selection(self, root):
-        """
-        The selection strategy is applied recursively until
-        an unknown position is reached
 
-        Args:
-            root (Node): Root node of the tree
-
-        Returns:
-            Node 
-        """
-        # Node to be selected
+    def select(self, root):
+        """Select highest uct"""
         node = root
-        # selection
         while node.children is not None:
-            # Select highest uct
             ucts = [child.get_uct() for child in node.children]
             if None in ucts:
                 node = random.choice(node.children)
@@ -38,117 +23,86 @@ class MonteCarloTreeSearch(object):
                 node = node.children[np.argmax(ucts)]
         return node
 
-    def playout(self, node):
-        """One simulated game is played"""
-        is_node_expanded = False
+    def expand(self, node):
+        # Get possible moves in that state
+        moves = node.env.get_valid_actions()
 
-        # Only expand node when the selected node 
-        # is not the terminator node
-        if node.game_status is RESULTS.NOT_FINISHED:
-            # To control if the leaf expanded 
-            # needed at the simulation step
-            is_node_expanded = True
+        # Nodes to be expanded
+        new_nodes = []
 
-            # Get possible moves in that state
-            # moves = valid_move(node.state)
-            moves = node.env.get_valid_actions()
+        for move in moves:
+            # Do not perform any action on original one
+            node_current = node.copy()
+            _, _, is_done = node_current.env.step(move)
+            game_status = RESULTS.NOT_FINISHED
+            if is_done:
+                game_status = RESULTS.WON
+                if node_current.env.PLAYER is PLAYER.SECOND:
+                    game_status = RESULTS.LOST
 
-            # Get possible states to set them as node later
-            states = []
-            for move in moves:
-                node_current = node.copy()
-                # game_status : 0 if game continues
-                _, _, is_done = node_current.env.step(move)
-                
-                # TODO: get this from gym-env directly
-                game_status = RESULTS.NOT_FINISHED
-                if is_done:
-                    if node_current.env.PLAYER is PLAYER.FIRST:
-                        game_status = RESULTS.WON
+            new_nodes.append( Node(
+                gym_env=node_current.env.copy(),
+                game_status=game_status,
+                move=move,
+                parent=node_current) )
 
-                states.append( ( (node_current, game_status), move) )
+        node.set_children(new_nodes)
 
-            # Expand : Set new states as nodes
-            new_nodes = []
-            for next_env_info, move in states:
-                next_node,game_status = next_env_info
-                new_node = Node(gym_env=next_node.env.copy(), game_status=game_status, move=move, parent=node)
-                new_nodes.append( new_node )
+        return node
 
-            node.set_children(new_nodes)
+    def simulate(self, node):
+        """
+        Should override current game tree
+        to backpropagation step
+        """
+        is_done = False
+        child_selected = node.copy()
+        while not is_done:
+            moves = child_selected.env.get_valid_actions()
+            move_random = random.choice(moves)
+            env_copied = child_selected.env.copy()
+            _, _, is_done = env_copied.step(move_random)
+            child_selected = Node(
+                gym_env=env_copied.copy(),
+                game_status=self.get_game_status(env_copied.PLAYER, is_done),
+                move=move_random,
+                parent=child_selected.copy())
+        node = child_selected.copy()
+        return node
 
-        return node, is_node_expanded
-
-    def expansion(self, node, is_node_expanded):
-        game_status = node.game_status
-        if is_node_expanded:        
-            # Get game_status nodes
-            winning_game_status_nodes = []
-            for child_node in node.children :
-                # If the child node is winning node
-                if child_node.game_status is RESULTS.WON:
-                    winning_game_status_nodes.append(child_node)
-            # If there is a game_status node, 
-            if len(winning_game_status_nodes) > 0:
-                node = winning_game_status_nodes[0]
-                game_status = node.game_status
-            else:
-                # Expand random child node 
-                # And check for winning/losing move
-                node = random.choice(node.children)
-                game_status = random_play_improved(node.copy())
-            
-        return game_status, node
-    
-    def backpropagation(self, game_status, selected_node):
-        parent = selected_node
+    def backpropagation(self, node):
+        parent = node
         while parent is not None:
             parent.games += 1
-            # If game is done and the winning is MCTS
-            if game_status is RESULTS.WON:
+            if parent.game_status is RESULTS.WON:
                 parent.win += 1
             parent = parent.parent
+        return parent
 
-    def mcts_one_step(self, root):
-        node_selected = self.selection(root)
-        if node_selected.game_status is RESULTS.NOT_FINISHED:
-            node_selected, is_node_expanded = self.playout(node_selected)
-            game_status, node_selected = self.expansion(node_selected,is_node_expanded)
-            self.backpropagation(game_status, node_selected)
+    def run(self, root):
+        root = self.select(root)
+        root = self.expand(root)
+        root = self.simulate(root)
+        root =self.backpropagation(root)
 
     def train(self, training_step):
         for _ in tqdm(range(0, training_step),desc='MCTS simulation'):
-            self.mcts_one_step(self.root)
+            self.run(self.root)
 
-    def train_mcts_online(self,node, training_time):
-        self.root = node
-        import time
-        start = int(round(time.time() * 1000))
-        current = start
-        # while time resources left, search for best move
-        while (current - start) < training_time:
-            self.mcts_one_step(self.root)
-            current = int(round(time.time() * 1000))
-        return self.root
+    def node_children_info(self, node):
+        if node.children is not None:
+            for child in node.children:
+                print(" ----------------- ")
+                print("move         :",child.move)
+                print("win          :",child.win)
+                print("games        :",child.games)
+                print("children     :",child.children)
+                print("env          :",child.env)
+                print("game_status  :",child.game_status)
 
-    def save(self):
-        total_play = 0
-        for child in self.root.children:
-            total_play += child.games
-        print("Total number of games played from root node : {0}".format(total_play) )
-
-        agent_name = 'TrainedAgents/mcts_brain_' + str(total_play) +  '.pickle' 
-        with open(agent_name, 'wb') as handle:
-            pickle.dump(self.root, handle, protocol=pickle.HIGHEST_PROTOCOL)
-            print("Agent is sucesfully saved !")
-
-    def load(self, agent_path):
-        agent_name = agent_path
-        root_loaded = None
-        with open(agent_name, 'rb') as handle:
-            root_loaded  = pickle.load(handle)
-        if root_loaded is not None:
-            self.root = root_loaded
-            print("Agent brain is loaded succesfully !")
-        else:
-            print("Agent brain could not be loaded")
+    def get_game_status(self, player, is_done):
+        if is_done:
+            if player is PLAYER.SECOND:
+                return RESULTS.LOST
+            return RESULTS.WON
+        return RESULTS.NOT_FINISHED
