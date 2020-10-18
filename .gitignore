@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+TrainedAgents/*
+
 # Distribution / packaging
 .Python
 build/
